@@ -12,10 +12,11 @@ import requests
 
 class ContractService(object):
     @classmethod
-    def __init__(cls, apiKey, nodeAddress, contractAddress):
+    def __init__(cls, apiKey, nodeAddress, contractAddress, implementationAddress=None):
         cls.apiKey = apiKey
         cls.nodeAddress = nodeAddress
         cls.contractAddress = contractAddress
+        cls.implementationAddress = implementationAddress
 
         if (cls.contractAddress == None or type(cls.contractAddress) != str):
             raise Exception("ContractService Error: expecting string for contract address.") 
@@ -25,15 +26,15 @@ class ContractService(object):
         
         if (cls.nodeAddress == None or type(cls.nodeAddress) != str):
             raise Exception("ContractService Error: expecting string for node address.")
-        
-    @classmethod
-    def connect(cls):
+
         # create web3 instance
         try:
             cls.web3Instance = Web3(Web3.HTTPProvider(cls.nodeAddress))
         except:
             raise Exception("ContractService Error: web3 instantiation failed. Check nodeAddress.")
         
+    @classmethod
+    def connect(cls):
         # get ABI from contract address using ether scan
         try:
             esUrl = "https://api.etherscan.io/api"
@@ -52,13 +53,13 @@ class ContractService(object):
             raise Exception("ContractService Error: web3 contract instantiation failed.")
     
     @classmethod
-    def connectWithImplementationAddress(cls, imp):
+    def connectImplementation(cls):
         # retrieve the implementation ABI for the contract
         try:
             esUrl = "https://api.etherscan.io/api"
             esModule = "contract"
             esAction = "getabi"
-            url = f'{esUrl}?module={esModule}&action={esAction}&address={imp}&apiKey={cls.apiKey}'
+            url = f'{esUrl}?module={esModule}&action={esAction}&address={cls.implementationAddress}&apiKey={cls.apiKey}'
             cls.abi = requests.get(url).json()['result']
         except:
             raise Exception("Failed to retrieve ABI for implementation contract address.")
@@ -69,4 +70,3 @@ class ContractService(object):
             return newContract
         except:
             raise Exception("ContractService Error: web3 contract instantiation with implementation ABI failed.")
-        
