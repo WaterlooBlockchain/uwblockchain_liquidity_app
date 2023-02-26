@@ -29,7 +29,12 @@ class AaveLpService(object):
             cls.contract = cls.contractService.connectImplementation()
         except:
             raise Exception("Failed to connect to AaveProtocolDataProvider Contract.")
-            
+        
+        try:
+            cls.web3Instance = Web3(Web3.HTTPProvider(os.getenv("NODE_ADDRESS")))
+        except:
+            raise Exception("ContractService Error: web3 instantiation failed. Check nodeAddress.")
+        
     def listenToEvents(cls, latest, blockLength) -> List[str]:
         eventFilter = cls.contract.events.Withdraw.createFilter(fromBlock=latest-blockLength, toBlock='latest')
 
