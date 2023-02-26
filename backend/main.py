@@ -11,10 +11,8 @@ def main():
     aave = AaveLpService()
     latest = aave.getLatestBlockNumber()
     
-    userAssetTuples = aave.listenToEvents(latest, 500)
-    # print(userAssetTuples[0])
-    # aave.fetchUserReserveData(userAssetTuples)
-    # aave.userReserveTest(userAssetTuples)
+    # smaller blocklength => smaller # of records
+    userAssetTuples = aave.listenToEvents(latest, 5000)
 
     reserveContractService = ContractService(
         apiKey=os.getenv("API_KEY"), 
@@ -28,7 +26,17 @@ def main():
         print("asset: " + user[1])
         print("user: " + user[0])
         result = contract.functions.getUserReserveData(user[1], user[0]).call()
-        print(result)
+        print("user reserve data...")
+        print("currentATokenBalance: " + str(result[0]))
+        print("currentStableDebt: " + str(result[1]))
+        print("currentVariableDebt: " + str(result[2]))
+        print("principalStableDebt: " + str(result[3]))
+        print("scaledVariableDebt: " + str(result[4]))
+        print("stableBorrowRate: "  + str(result[5]))
+        print("liqudityRate: " + str(result[6]))
+        print("stableRateLastUpdated: " + str(result[7]))
+        print("usageAsCollateralEnabled: " + str(result[8]))
+        print("-----------------------------")
 
 if __name__ == '__main__':
     main()
