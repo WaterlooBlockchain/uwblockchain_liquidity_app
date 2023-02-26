@@ -1,3 +1,4 @@
+from typing import List, Tuple
 from dotenv import load_dotenv
 import os
 from web3 import Web3
@@ -29,11 +30,21 @@ class AaveLpService(object):
         except:
             raise Exception("Failed to connect to AaveProtocolDataProvider Contract.")
             
-    def listenToEvents(cls) -> None:
-        print("----------------- LISTENING TO EVENTS... -----------------")
-        eventFilter = cls.contract.events.Withdraw.createFilter(fromBlock="latest")
-        
-        while True:
-            for event in eventFilter.get_new_entries():
-                print("----------------- NEW EVENT -----------------")
-                print(Web3.toJSON(event))
+    def listenToEvents(cls, latest, blockLength) -> List[str]:
+        eventFilter = cls.contract.events.Withdraw.createFilter(fromBlock=latest-blockLength, toBlock='latest')
+
+        userAssetTuples = []
+        for event in eventFilter.get_all_entries():
+            withdrawalAsset = event['args']['reserve']
+            userAddress = event['args']['user']
+            userAssetTuples.append((userAddress, withdrawalAsset))
+        return userAssetTuples
+
+    # def fetchUserReserveData(cls, activeUsers: List[Tuple(str, str)]) -> List[Tuple(str, str)]:
+    def fetchUserReserveData(cls, activeUsers):
+        userReserveData = []
+        for data in activeUsers:
+            user = data[0]
+            asset = data[1]
+            
+            print(cls.contract.functions.getUserAccountData(user).call())
