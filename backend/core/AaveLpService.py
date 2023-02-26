@@ -40,6 +40,9 @@ class AaveLpService(object):
             userAssetTuples.append((userAddress, withdrawalAsset))
         return userAssetTuples
 
+    def getLatestBlockNumber(cls):
+        return cls.web3Instance.eth.get_block_number()
+
     # def fetchUserReserveData(cls, activeUsers: List[Tuple(str, str)]) -> List[Tuple(str, str)]:
     def fetchUserReserveData(cls, activeUsers):
         userReserveData = []
