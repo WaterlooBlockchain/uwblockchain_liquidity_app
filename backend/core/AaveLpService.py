@@ -3,9 +3,8 @@ import os
 from web3 import Web3
 from utils.ContractService import ContractService
 
-# AaveService
+# AaveLpService
 # Encapsulates all functionality related to Aave
-# default instantiatiation will connect 
 class AaveLpService(object):
     @classmethod
     def __init__(cls) -> None:
@@ -28,12 +27,61 @@ class AaveLpService(object):
             cls.contract = cls.contractService.connectImplementation()
         except:
             raise Exception("Failed to connect to AaveProtocolDataProvider Contract.")
-            
-    def listenToEvents(cls) -> None:
-        print("----------------- LISTENING TO EVENTS... -----------------")
-        eventFilter = cls.contract.events.Withdraw.createFilter(fromBlock="latest")
         
-        while True:
-            for event in eventFilter.get_new_entries():
-                print("----------------- NEW EVENT -----------------")
-                print(Web3.toJSON(event))
+        try:
+            cls.web3Instance = Web3(Web3.HTTPProvider(os.getenv("NODE_ADDRESS")))
+        except:
+            raise Exception("ContractService Error: web3 instantiation failed. Check nodeAddress.")
+    
+    @classmethod
+    def listenToEvents(cls, latest, blockLength) -> List[str]:
+        eventFilter = cls.contract.events.Withdraw.createFilter(fromBlock=latest-blockLength, toBlock='latest')
+
+        userAssetTuples = []
+        for event in eventFilter.get_all_entries():
+            withdrawalAsset = event['args']['reserve']
+            userAddress = event['args']['user']
+            userAssetTuples.append((userAddress, withdrawalAsset))
+        return userAssetTuples
+
+    @classmethod
+    def getLatestBlockNumber(cls):
+        return cls.web3Instance.eth.get_block_number()
+
+    @classmethod
+    def fetchUserReserveData(cls, activeUsers):
+        userReserveData = []
+        for data in activeUsers:
+            user = data[0]
+            asset = data[1]
+            
+            print(cls.contract.functions.getUserAccountData(user).call())
+
+    @classmethod
+    def calculateLongShortRatio(cls, user):
+        reserveList = cls.contract.functions.getReservesList().call()
+        user = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+
+        binaryUserConfig = cls.findUserConfig(user)
+
+        assetBinaryPairMapping = cls.mapReservesToBinary(binaryUserConfig, reserveList)
+        print(binaryUserConfig)
+
+    @classmethod
+    def findUserConfig(cls, user):
+        # print(user)
+        # hexConfig = "0x" + str(cls.contract.functions.getUserConfiguration(user).call()[0])
+        # print(hexConfig)
+        # decimalConfig = int(hexConfig)
+
+        binaryConfig = "10101001001011101010101100000010011100010001000"
+        return binaryConfig
+
+    @classmethod
+    def mapReservesToBinary(cls, binaryUserConfig, reserveList):
+        print(len(binaryUserConfig))
+        print(len(reserveList))
+
+    @classmethod
+    def getBalanceOf(cls, user):
+        print(cls.contract.functions.balanceOf(user))

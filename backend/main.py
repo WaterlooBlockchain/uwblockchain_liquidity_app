@@ -9,7 +9,13 @@ def main():
 
     # Aave
     aave = AaveLpService()
-    aave.listenToEvents()
+    latest = aave.getLatestBlockNumber()
+    
+    # smaller blocklength => smaller # of records
+    userAssetTuples = aave.listenToEvents(latest, 500)
+    aave.calculateLongShortRatio(userAssetTuples[0][1])
+
+    
 
 if __name__ == '__main__':
     main()
