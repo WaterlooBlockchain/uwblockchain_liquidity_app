@@ -1,3 +1,4 @@
+from typing import List
 from dotenv import load_dotenv
 import os
 from web3 import Web3
@@ -81,7 +82,3 @@ class AaveLpService(object):
     def mapReservesToBinary(cls, binaryUserConfig, reserveList):
         print(len(binaryUserConfig))
         print(len(reserveList))
-
-    @classmethod
-    def getBalanceOf(cls, user):
-        print(cls.contract.functions.balanceOf(user))
