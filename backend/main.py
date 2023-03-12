@@ -27,7 +27,10 @@ def main():
         print("-----------------------------")
         
     aave.updateUserList()
-    aave.getUserPositions()
+    
+    for user in userAssetTuples:
+        print(f'address: {user[0]}')
+        print(f'data: {aave.getUserPositions(user[0])}')
 
 if __name__ == '__main__':
     main()

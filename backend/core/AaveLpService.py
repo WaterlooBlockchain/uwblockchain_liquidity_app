@@ -92,7 +92,7 @@ class AaveLpService(object):
             with open(parent / "userData.p", 'wb') as output:
                 pickle.dump(oldUserData, output)
                 
-    def getUserPositions(cls, address="0xa7888F85BD76deeF3Bd03d4DbCF57765a49883b3"):
+    def getUserPositions(cls, address):
         
         cls.updateUserList()
         
@@ -125,14 +125,11 @@ class AaveLpService(object):
             
             with open(parent / 'reserveList.p', 'rb') as input:
                 reserveData = pickle.load(input)
-                
-        print(reserveData)
         
         userConfig = str(bin(cls.contract.functions.getUserConfiguration(address).call()[0])[2:])
         
         # Pad if necessary
         if len(userConfig) < 2*len(reserveData):
-            print("Padding")
             userConfig = (2*len(reserveData)-len(userConfig))*"0" + userConfig
         
         # Break it into 2 character chunks, read from right to left
@@ -147,13 +144,12 @@ class AaveLpService(object):
         userConfig = [userConfig[i:i+2] for i in range(0, len(userConfig), 2)]
         userConfig = userConfig[::-1]
         
-        userData = {'deposits' : [], 'borrowed' : []}
+        userData = {'deposits' : {}, 'borrowed' : {}}
         for i in range(len(userConfig)):
             pair = userConfig[i]
-            print(pair)
             if pair[0] == '1':
-                userData['deposits'].append(reserveData[i]['symb'])
+                userData['deposits'][reserveData[i]['symb']] = 0
             if pair[1] == '1':
-                userData['borrowed'].append(reserveData[i]['symb'])
-                
+                userData['borrowed'][reserveData[i]['symb']] = 0
+
         return userData
