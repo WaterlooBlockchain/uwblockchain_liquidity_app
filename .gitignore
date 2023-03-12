@@ -1,2 +1,3 @@
 /backend/.env
+/backend/core/userData.p
 *__pycache__
