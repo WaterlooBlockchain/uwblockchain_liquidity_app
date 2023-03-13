@@ -1,6 +1,6 @@
 from core.AaveLpService import AaveLpService
 from utils.ContractService import ContractService
-import os
+import os, pickle
 from dotenv import load_dotenv
 
 def main():
@@ -9,10 +9,6 @@ def main():
 
     # Aave
     aave = AaveLpService()
-    latest = aave.getLatestBlockNumber()
-    
-    # smaller blocklength => smaller # of records
-    userAssetTuples = aave.listenToEvents(latest, 5000)
 
     reserveContractService = ContractService(
         apiKey=os.getenv("API_KEY"), 
@@ -20,17 +16,15 @@ def main():
         contractAddress="0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d"
     )
     contract = reserveContractService.connect()
-
-    for user in userAssetTuples:
-        print(f"user address: {user[0]}")
-        print(f"blockNum: {user[1]}")
-        print("-----------------------------")
         
     aave.updateUserList()
     
-    for user in userAssetTuples:
-        print(f'address: {user[0]}')
-        print(f'data: {aave.getUserPositions(user[0])}')
+    with open('core/userData.p', 'rb') as input:
+        userData = pickle.load(input)
+    
+    for user in userData['users']:
+        print(f'address: {user}')
+        print(f'data: {aave.getUserPositions(user)}')
 
 if __name__ == '__main__':
     main()

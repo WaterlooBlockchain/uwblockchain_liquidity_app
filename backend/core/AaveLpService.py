@@ -57,13 +57,6 @@ class AaveLpService(object):
         return cls.web3Instance.eth.get_block_number()
 
     # def fetchUserReserveData(cls, activeUsers: List[Tuple(str, str)]) -> List[Tuple(str, str)]:
-    def fetchUserReserveData(cls, activeUsers):
-        userReserveData = []
-        for data in activeUsers:
-            user = data[0]
-            asset = data[1]
-            
-            print(cls.contract.functions.getUserAccountData(user).call())
             
     def updateUserList(cls):
         
@@ -106,16 +99,29 @@ class AaveLpService(object):
             
             with open(parent / "../utils/erc20.abi", 'r') as input:
                 erc20_abi = input.read()
+                
+            with open(parent / "../utils/protocolDataProvider.abi", 'r') as input:
+                dataProvider_abi = input.read()
+                
+            pdp_cntrct = cls.web3Instance.eth.contract(address="0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d",
+                                                       abi=dataProvider_abi)
             
             for addr in reserveList:
                 tkn_cntrct = cls.web3Instance.eth.contract(address=addr, abi=erc20_abi)
                 
                 reserveData.append({})
                 reserveData[-1]['addr'] = addr
+                reserveAddr = pdp_cntrct.functions.getReserveTokensAddresses(addr).call()
                 if addr == "0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2":
                     reserveData[-1]['symb'] = "MKR"
+                    reserveData[-1]['aTknAddress'] = reserveAddr[0]
+                    reserveData[-1]['varDebtAddress'] = reserveAddr[1]
+                    reserveData[-1]['stabDebtAddress'] = reserveAddr[2]
                 else:
                     reserveData[-1]['symb'] = tkn_cntrct.functions.symbol().call()
+                    reserveData[-1]['aTknAddress'] = reserveAddr[0]
+                    reserveData[-1]['varDebtAddress'] = reserveAddr[1]
+                    reserveData[-1]['stabDebtAddress'] = reserveAddr[2]
                 reserveData[-1]['dec'] = tkn_cntrct.functions.decimals().call()
             
             with open(parent / "reserveList.p", 'wb') as output:
@@ -148,8 +154,46 @@ class AaveLpService(object):
         for i in range(len(userConfig)):
             pair = userConfig[i]
             if pair[0] == '1':
-                userData['deposits'][reserveData[i]['symb']] = 0
+                userData['deposits'][reserveData[i]['symb']] = cls.fetchUserReserveAmnt(address, reserveData[i]['symb'])
             if pair[1] == '1':
-                userData['borrowed'][reserveData[i]['symb']] = 0
+                userData['borrowed'][reserveData[i]['symb']] = cls.fetchUserReserveAmnt(address, reserveData[i]['symb'], True)
 
         return userData
+    
+    def fetchUserReserveAmnt(cls, user, symb, debt=False):
+        
+        parent = pathlib.Path(__file__).parent.resolve()
+        with open(parent / 'reserveList.p', 'rb') as input:
+            reserveData = pickle.load(input)
+        with open(parent / "../utils/erc20.abi", 'r') as input:
+                erc20_abi = input.read()
+            
+        cnt = 0
+        while cnt < len(reserveData):
+            
+            if reserveData[cnt]['symb'] == symb:
+                
+                break
+            
+            cnt += 1
+            
+        assert cnt != len(reserveData), "Could not find symbol"
+            
+        if not debt:
+            
+            aTknCntrct = cls.web3Instance.eth.contract(address=reserveData[cnt]['aTknAddress'],
+                                                       abi=erc20_abi)
+            
+            return aTknCntrct.functions.balanceOf(user).call() / 10**aTknCntrct.functions.decimals().call()
+        
+        else:
+            
+            varDebtCntrct = cls.web3Instance.eth.contract(address=reserveData[cnt]['varDebtAddress'],
+                                                          abi=erc20_abi)
+            stabDebtCntrct = cls.web3Instance.eth.contract(address=reserveData[cnt]['stabDebtAddress'],
+                                                           abi=erc20_abi)
+            
+            varBal = varDebtCntrct.functions.balanceOf(user).call() / 10**varDebtCntrct.functions.decimals().call()
+            stabBal = stabDebtCntrct.functions.balanceOf(user).call() / 10**stabDebtCntrct.functions.decimals().call()
+            
+            return varBal + stabBal
