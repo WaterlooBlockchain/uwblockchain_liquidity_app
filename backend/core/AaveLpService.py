@@ -35,6 +35,24 @@ class AaveLpService(object):
             cls.web3Instance = Web3(Web3.HTTPProvider(os.getenv("NODE_ADDRESS")))
         except:
             raise Exception("ContractService Error: web3 instantiation failed. Check nodeAddress.")
+
+    @classmethod
+    def collectUserData(cls):
+        reserveContractService = ContractService(
+            apiKey="CRSZ3RKR7QQY9IDYM6JEWXCQQBBRC8DGN6", 
+            nodeAddress="https://mainnet.infura.io/v3/627dba05199b4a3780b76ef7a35b0d4d",
+            contractAddress="0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d"
+        )
+        contract = reserveContractService.connect()
+            
+        cls.updateUserList()
+        
+        with open('userData.p', 'rb') as input:
+            userData = pickle.load(input)
+        
+        for user in userData['users']:
+            print(f'address: {user}')
+            print(f'data: {cls.getUserPositions(user)}')
         
     def listenToEvents(cls, latest, blockLength) -> List[str]:
         eventDepositFilter = cls.contract.events.Deposit.createFilter(fromBlock=latest-blockLength, toBlock='latest')
@@ -62,7 +80,7 @@ class AaveLpService(object):
         
         latest = cls.getLatestBlockNumber()
     
-        userAssetTuples = cls.listenToEvents(latest, 5000)
+        userAssetTuples = cls.listenToEvents(latest, 100)
         
         parent = pathlib.Path(__file__).parent.resolve()
         

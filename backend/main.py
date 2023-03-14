@@ -9,6 +9,7 @@ def main():
 
     # Aave
     aave = AaveLpService()
+    aave.collectUserData()
 
     reserveContractService = ContractService(
         apiKey=os.getenv("API_KEY"), 
