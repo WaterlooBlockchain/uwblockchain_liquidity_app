@@ -21,7 +21,7 @@ def main():
     # print(aave.getWithdrawalDepositData()['data'])
     # print(aave.getLongShortRatios())
 
-    aave.getTop25UsersAssetDistribution()
+    # aave.getTop25UsersAssetDistribution()
 
 if __name__ == '__main__':
     main()
