@@ -1,0 +1,4 @@
+Notes from 03/20/2023
+
+- running collect users on 03/20/2023 results in ~1200 unique users being added
+	to the userData.p file
