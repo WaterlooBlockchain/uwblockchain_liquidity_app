@@ -9,6 +9,7 @@ from typing import Any
 from web3 import Web3
 from aiohttp import ClientSession
 import requests
+import pathlib
 
 class ContractService(object):
     @classmethod
@@ -37,13 +38,12 @@ class ContractService(object):
     def connect(cls):
         # get ABI from contract address using ether scan
         try:
-            esUrl = "https://api.etherscan.io/api"
-            esModule = "contract"
-            esAction = "getabi"
-            url = f'{esUrl}?module={esModule}&action={esAction}&address={cls.contractAddress}&apiKey={cls.apiKey}'            
-            cls.abi = requests.get(url).json()['result']
+            
+            with open(pathlib.Path(__file__).parent.resolve() / "lendingPool.abi") as input:
+                cls.abi = input.read()
+
         except:
-            raise Exception("ContractService Error: Etherscan API ABI fetch failed. Check API key.")
+            raise Exception("ContractService Error: Could not find the lendingPool ABI")
 
         # use ABI to create a web3.py contract instance and return it
         try:
