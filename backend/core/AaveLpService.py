@@ -6,6 +6,7 @@ import os
 from web3 import Web3
 import pathlib, pickle
 from utils.ContractService import ContractService
+import math
 
 # AaveService
 # Encapsulates all functionality related to Aave
@@ -13,6 +14,9 @@ from utils.ContractService import ContractService
 class AaveLpService(object):
     @classmethod
     def __init__(cls) -> None:
+        cls.liquidationThresholdMap = {'DAI': 0.8, 'FEI': 0.75, 'TUSD': 0.83, 'USDC': 0.88, 'AAVE': 0.7, 'BAL': 0.7, 'BAT': 0.8, 'CRV': 0.65, 'DPI': 0.7, 'ENJ': 0.7, \
+                                            "ENS": 0.6, 'KNC': 0.7, 'LINK': 0.78, 'MANA': 0.75, 'MKR': 0.7, 'REN': 0.65, 'SNX': 0.65, 'stETH': 0.75, 'UNI': 0.75, 'WBTC': 0.75, \
+                                                'WETH': 0.85, 'XSUSHI': 0.65, 'YFI': 0.65, 'ZRX': 0.75}
         # instantiate Contract Service
         load_dotenv("./.env")
         cls.contractAddress = "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
@@ -37,6 +41,7 @@ class AaveLpService(object):
             cls.web3Instance = Web3(Web3.HTTPProvider(os.getenv("NODE_ADDRESS")))
         except:
             raise Exception("ContractService Error: web3 instantiation failed. Check nodeAddress.")
+        
 
     @classmethod
     def collectUserData(cls):     
@@ -173,6 +178,8 @@ class AaveLpService(object):
     def getTop25UsersAssetDistribution(cls):
         top25Users = cls.getTop25UsersByDeposits()
         symbolPriceMap = cls.getSymbolPriceMap()
+        # print(top25Users)
+        # print(len(symbolPriceMap))
 
         # note, this distribution is all in ETH.
         assetDistribution = {}
@@ -497,3 +504,34 @@ class AaveLpService(object):
             stabBal = stabDebtCntrct.functions.balanceOf(user).call() / 10**stabDebtCntrct.functions.decimals().call()
             
             return varBal + stabBal
+
+    # return {useraddr: healthFactor}
+    @classmethod
+    def getHealthFactorForUsersWithTotalBalanceGreaterThan25Eth(cls):
+        healthFactor = {}
+        userData = cls.getUsersWithTotalBalanceGreaterThan25Eth()
+        currencyMap = cls.getSymbolPriceMap()
+
+        for user in userData:
+            withdrawalDepositData = user['withDrawalDepositData']
+            deposits = withdrawalDepositData['deposits']
+            withdrawals = withdrawalDepositData['borrowed']
+
+            nominator = 0
+            for asset in deposits:
+                # if asset has no liquidation threshold, ignore
+                if asset in cls.liquidationThresholdMap:
+                    nominator += deposits[asset]*currencyMap[asset]*cls.liquidationThresholdMap[asset]
+            
+            denominator = 0
+            for asset in withdrawals:
+                denominator += withdrawals[asset]*currencyMap[asset]
+
+            if denominator == 0:
+                healthFactor[user['address']] = math.inf
+            else:
+                healthFactor[user['address']] = nominator/denominator
+
+        return healthFactor
+
+            
